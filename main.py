@@ -284,6 +284,7 @@ async def reply(message):
         if 'is_gallery' in data:
             if data['is_gallery'] == True:
                 for id in data['gallery_data']['items']:
+                    await asyncio.sleep(0.5)
                     link = 'https://i.redd.it/' + id['media_id']
                     try:
                         await bot.send_photo(message.chat.id, link + '.jpg', reply_to_message_id=message.message_id)
