@@ -3,13 +3,14 @@ from bs4 import BeautifulSoup as bs
 import re
 import json
 from telebot import types
-
-from constants import BASE_OSUBS, BASE_OSUBS_FILES, BASE_OSUBS_TV, HEADERS
-
+from constants import BASE_OSUBS, BASE_OSUBS_FILES, BASE_OSUBS_TV, HEADERS_OS
+from anubis_solver import solve_anubis_challenge
+from requests.utils import add_dict_to_cookiejar
 
 class OSubs:
     def __init__(self, query, lang='eng'):
         self.query = query
+        self.sess = None
         self.matched = {}
         self.markup = None
         self.selected_index = 0 # first markup
@@ -26,7 +27,12 @@ class OSubs:
         
     async def get_matched(self):
         self.matched = {}
-        r = requests.get(BASE_OSUBS + self.query, headers=HEADERS)
+        self.sess = requests.Session()     
+        resp = self.sess.get('https://www.opensubtitles.org', timeout=10, allow_redirects=True)
+        cookies = solve_anubis_challenge(self.sess, resp.url)
+        add_dict_to_cookiejar(self.sess.cookies, cookies)
+        
+        r = self.sess.get(BASE_OSUBS + self.query, headers=HEADERS_OS)
         parsed_json = json.loads(r.text)
         for i, title in enumerate(parsed_json):
             if int(title['total']) > 0:
@@ -44,8 +50,8 @@ class OSubs:
 
     async def get_files(self):
         self.files = {}
-        r = requests.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1])
-        print(r.url)
+        r = self.sess.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1] + '/sort-7/asc-0')
+        # print(r.url)
         soup = bs(r.content, 'lxml')
         table = soup.find('table', id='search_results')
         rows = table.find_all('tr', id=re.compile('^name'))
@@ -58,7 +64,7 @@ class OSubs:
             if name == '':
                 continue
             self.files[counter] = [
-                            f'{name}\n\nRating: {cells[5].text} ({cells[5].span.get('title')})',
+                            f'{name}\n\nDownloaded: {cells[4].a.text.replace('x', '')}\nRating: {cells[5].text} ({cells[5].span.get('title')})',
                             'https://www.opensubtitles.org/en/subtitleserve/sub/' + cells[4].a.get('href').split('/')[-1],
                             'https://dl.opensubtitles.org/en/download/sub/' + cells[4].a.get('href').split('/')[-1] + '.zip',
                         ]
@@ -69,7 +75,7 @@ class OSubs:
         
     async def get_seasons(self):
         self.files = {}
-        r = requests.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1])
+        r = self.sess.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1])
         soup = bs(r.content, 'lxml')
         table = soup.find('table', id='search_results')
         

@@ -28,8 +28,8 @@ import sys
 
 import json
 
-from server import server
-server()
+# from server import server
+# server()
 
 bot = AsyncTeleBot(API_KEY)
 
@@ -284,7 +284,6 @@ async def reply(message):
         if 'is_gallery' in data:
             if data['is_gallery'] == True:
                 for id in data['gallery_data']['items']:
-                    await asyncio.sleep(0.5)
                     link = 'https://i.redd.it/' + id['media_id']
                     try:
                         await bot.send_photo(message.chat.id, link + '.jpg', reply_to_message_id=message.message_id)
@@ -554,6 +553,7 @@ async def callback_data(call):
             if msg[call.message.chat.id].serched['subs'].matched[0][2] == 'tv':
                 await msg[call.message.chat.id].serched['subs'].get_seasons()
                 await bot.edit_message_text('Choose:\n(if no subs in season, try the unclassified)', call.message.chat.id, call.message.message_id, reply_markup=msg[call.message.chat.id].serched['subs'].seasons_markup)
+            return 
         
         if call.data.startswith('season_subs'):
             if not msg[call.message.chat.id].user_free:
@@ -569,8 +569,12 @@ async def callback_data(call):
                     await asyncio.sleep(0.5)
                     await bot.send_message(call.message.chat.id, name + caption, reply_to_message_id=call.message.reply_to_message.message_id)
                 else:
+                    # r = msg[call.message.chat.id].serched['subs'].sess.get(url, stream=True)
                     r = requests.get(url, stream=True)
-                    await bot.send_document(call.message.chat.id, r.raw, call.message.reply_to_message.message_id, caption=caption, visible_file_name=name+'.zip')
+                    if 'Making sure you\'re not a bot!' in r.text or 'CAPTCHA robot test' in r.text:
+                        await bot.send_message(call.message.chat.id, name + 'Sorry couldn\'t download the file, please report this to bot creator!', reply_to_message_id=call.message.reply_to_message.message_id)
+                    else:
+                        await bot.send_document(call.message.chat.id, r.raw, call.message.reply_to_message.message_id, caption=caption, visible_file_name=name+'.zip')
             await bot.send_message(call.message.chat.id, 'Done!')
             msg[call.message.chat.id].user_free = True
             return
@@ -604,7 +608,8 @@ async def callback_data(call):
                 await bot.send_document(call.message.chat.id, url1, call.message.reply_to_message.message_id, caption=caption)
             except:
                 await bot.send_document(call.message.chat.id, url2, call.message.reply_to_message.message_id, caption=caption)
-                
+            return
+        
         # --- LRC ---
         if call.data.startswith('lrc'):
             await bot.send_chat_action(call.message.chat.id, "typing")
