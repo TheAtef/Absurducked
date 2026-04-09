@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup as bs
 import re
 import json
 from telebot import types
-from constants import BASE_OSUBS, BASE_OSUBS_FILES, BASE_OSUBS_TV, HEADERS_OS
+from constants import BASE_OSUBS, BASE_OSUBS_FILES, BASE_OSUBS_TV, HEADERS
 from anubis_solver import solve_anubis_challenge
 from requests.utils import add_dict_to_cookiejar
 
@@ -28,11 +28,14 @@ class OSubs:
     async def get_matched(self):
         self.matched = {}
         self.sess = requests.Session()     
+        self.sess.headers.update(HEADERS)
         resp = self.sess.get('https://www.opensubtitles.org', timeout=10, allow_redirects=True)
         cookies = solve_anubis_challenge(self.sess, resp.url)
         add_dict_to_cookiejar(self.sess.cookies, cookies)
         
-        r = self.sess.get(BASE_OSUBS + self.query, headers=HEADERS_OS)
+        r = self.sess.get(BASE_OSUBS + self.query)
+        if r.status_code != 200:
+            return None
         parsed_json = json.loads(r.text)
         for i, title in enumerate(parsed_json):
             if int(title['total']) > 0:

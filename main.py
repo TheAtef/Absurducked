@@ -28,8 +28,8 @@ import sys
 
 import json
 
-# from server import server
-# server()
+from server import server
+server()
 
 bot = AsyncTeleBot(API_KEY)
 
@@ -74,7 +74,8 @@ async def sp(message):
         smsg += item
     for item in crypto.values():
         smsg += item
-        
+    if smsg == '':
+        smsg = 'Sorry, something went wrong.'
     await bot.reply_to(message, smsg, parse_mode='markdown')
     await chat(message)
     
@@ -185,6 +186,7 @@ async def reply(message):
 
 @bot.message_handler(commands=['subs'])
 async def reply(message):
+    await chat(message)
     if (message.chat.id not in msg.keys()):
         msg[message.chat.id] = MessageContext(message)
     await bot.send_chat_action(message.chat.id, action='typing')
@@ -193,15 +195,18 @@ async def reply(message):
         return
     msg[message.chat.id].serched['subs'] = OSubs(message.text.removeprefix('/subs '))
     await msg[message.chat.id].serched['subs'].get_matched()
+    if msg[message.chat.id].serched['subs'].markup == None:
+        bot.reply_to(message, 'Sorry, this feature is down for now.')
+        return
     await bot.send_message(message.chat.id, 'Choose:', reply_to_message_id=message.message_id, reply_markup= msg[message.chat.id].serched['subs'].markup)
     # if msg[message.chat.id].serched['subs'].max_index == 0:
     #     await bot.send_message(message.chat.id, ':)', reply_markup= msg[message.chat.id].serched['yts'].swipe_markup, reply_to_message_id=message.message_id)
     # else:
     #     await bot.send_photo(message.chat.id, msg[message.chat.id].serched['yts'].matched[0][0], caption=msg[message.chat.id].serched['yts'].matched[0][1], reply_markup= msg[message.chat.id].serched['yts'].swipe_markup, reply_to_message_id=message.message_id, parse_mode='markdown')
-    await chat(message)
     
 @bot.message_handler(commands=['subs_ar'])
 async def reply(message):
+    await chat(message)
     if (message.chat.id not in msg.keys()):
         msg[message.chat.id] = MessageContext(message)
     await bot.send_chat_action(message.chat.id, action='typing')
@@ -210,13 +215,14 @@ async def reply(message):
         return
     msg[message.chat.id].serched['subs'] = OSubs(message.text.removeprefix('/subs_ar '), lang='ara')
     await msg[message.chat.id].serched['subs'].get_matched()
+    if msg[message.chat.id].serched['subs'].markup == None:
+        bot.reply_to(message, 'Sorry, this feature is down for now.')
+        return
     await bot.send_message(message.chat.id, 'Choose:', reply_to_message_id=message.message_id, reply_markup= msg[message.chat.id].serched['subs'].markup)
     # if msg[message.chat.id].serched['subs'].max_index == 0:
     #     await bot.send_message(message.chat.id, ':)', reply_markup= msg[message.chat.id].serched['yts'].swipe_markup, reply_to_message_id=message.message_id)
     # else:
     #     await bot.send_photo(message.chat.id, msg[message.chat.id].serched['yts'].matched[0][0], caption=msg[message.chat.id].serched['yts'].matched[0][1], reply_markup= msg[message.chat.id].serched['yts'].swipe_markup, reply_to_message_id=message.message_id, parse_mode='markdown')
-    await chat(message)
-    
     
 # --- Urban Dictionary ---
 @bot.message_handler(commands=['slang'])
@@ -284,6 +290,7 @@ async def reply(message):
         if 'is_gallery' in data:
             if data['is_gallery'] == True:
                 for id in data['gallery_data']['items']:
+                    asyncio.sleep(0.5)
                     link = 'https://i.redd.it/' + id['media_id']
                     try:
                         await bot.send_photo(message.chat.id, link + '.jpg', reply_to_message_id=message.message_id)
@@ -395,7 +402,7 @@ async def callback_data(call):
             # if 'anghami' in msg[call.message.chat.id].serched:
             #     await bot.edit_message_text('اختر الأغنية:', call.message.chat.id, call.message.message_id, reply_markup=msg[call.message.chat.id].serched['anghami'].songs_markup)
             # else:
-            msg[call.message.chat.id].serched['anghami'] = AnghamiScraper(call.message.reply_to_message.text)
+            msg[call.message.chat.id].serched['anghami'] = AnghamiScraper(call.message.reply_to_message.text.removeprefix('/ly '))
             await bot.edit_message_text('اختر الأغنية:', call.message.chat.id, call.message.message_id, reply_markup=msg[call.message.chat.id].serched['anghami'].songs_markup)
 
         if call.data.startswith('anghami_selected'):
@@ -419,7 +426,7 @@ async def callback_data(call):
             # if 'songtell' in msg[call.message.chat.id].serched:
             #     await bot.edit_message_text('Choose your song:', call.message.chat.id, call.message.message_id, reply_markup=msg[call.message.chat.id].serched['songtell'].songs_markup)
             # else:
-            msg[call.message.chat.id].serched['songtell'] = SongTellScraper(call.message.reply_to_message.text)
+            msg[call.message.chat.id].serched['songtell'] = SongTellScraper(call.message.reply_to_message.text.removeprefix('/ly '))
             await msg[call.message.chat.id].serched['songtell'].get_songs()
             await bot.edit_message_text('Choose your song:', call.message.chat.id, call.message.message_id, reply_markup=msg[call.message.chat.id].serched['songtell'].songs_markup)
             
