@@ -196,7 +196,7 @@ async def reply(message):
     msg[message.chat.id].serched['subs'] = OSubs(message.text.removeprefix('/subs '))
     await msg[message.chat.id].serched['subs'].get_matched()
     if msg[message.chat.id].serched['subs'].markup == None:
-        bot.reply_to(message, 'Sorry, this feature is down for now.')
+        await bot.reply_to(message, 'Sorry, this feature is down for now.')
         return
     await bot.send_message(message.chat.id, 'Choose:', reply_to_message_id=message.message_id, reply_markup= msg[message.chat.id].serched['subs'].markup)
     # if msg[message.chat.id].serched['subs'].max_index == 0:
@@ -216,7 +216,7 @@ async def reply(message):
     msg[message.chat.id].serched['subs'] = OSubs(message.text.removeprefix('/subs_ar '), lang='ara')
     await msg[message.chat.id].serched['subs'].get_matched()
     if msg[message.chat.id].serched['subs'].markup == None:
-        bot.reply_to(message, 'Sorry, this feature is down for now.')
+        await bot.reply_to(message, 'Sorry, this feature is down for now.')
         return
     await bot.send_message(message.chat.id, 'Choose:', reply_to_message_id=message.message_id, reply_markup= msg[message.chat.id].serched['subs'].markup)
     # if msg[message.chat.id].serched['subs'].max_index == 0:
