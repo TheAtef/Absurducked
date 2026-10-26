@@ -28,8 +28,8 @@ import sys
 
 import json
 
-# from server import server
-# server()
+from server import server
+server()
 
 bot = AsyncTeleBot(API_KEY)
 
@@ -94,7 +94,7 @@ async def otd(message):
     
 # --- BOOK ---    
 @bot.message_handler(commands=['book'])
-async def otd(message):
+async def book(message):
     if (message.chat.id not in msg.keys()):
         msg[message.chat.id] = MessageContext(message)
     await bot.send_chat_action(message.chat.id, action='typing')
