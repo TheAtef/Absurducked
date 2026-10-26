@@ -1,5 +1,4 @@
 import cloudscraper
-import requests
 import re
 from bs4 import BeautifulSoup as bs
 import json
@@ -10,18 +9,18 @@ from constants import BASE_ANGHAMI, HEADERS
 class AnghamiScraper:
     def __init__(self, query):
         self.query = query
+        self.scraper = cloudscraper.create_scraper()
         self.songs_matched = {}
         self.songs_markup = self.get_songs()
         self.lyrics = None
         self.photo = None
         
     def get_songs(self):
-        scraper = cloudscraper.create_scraper()
         songs_matched = {}
         counter = 1
         markup = types.InlineKeyboardMarkup()
         url = BASE_ANGHAMI + self.query.strip()
-        r = scraper.get(url)
+        r = self.scraper.get(url)
         if r.status_code == 200:
             parsed_json = json.loads(r.text)
             for song in parsed_json['sections'][0]['data']:
@@ -43,13 +42,13 @@ class AnghamiScraper:
     def get_data(self, song_selected):
         photo_url = 'https://angartwork.anghcdn.co/?id=' + str(self.songs_matched[song_selected][1])
         lyrics_url = 'https://kalimat.anghami.com/lyrics/' + str(self.songs_matched[song_selected][0])
-        r = requests.get(lyrics_url, headers=HEADERS)
+        r = self.scraper.get(lyrics_url, headers=HEADERS)
         if r.status_code == 200:
             soup_ar = bs(r.content, 'lxml')
-        try:
-            lyrics = self.songs_matched[song_selected][2].split('-')[0].strip() + ' | كلمات:\n\n' + soup_ar.find('pre', class_=re.compile("^lyrics-body")).text
-        except AttributeError:
-            lyrics = self.songs_matched[song_selected][2].split('-')[0].strip() + ' | كلمات:\n\n' + soup_ar.find('h4', class_=re.compile("^error-page")).text
+            try:
+                lyrics = self.songs_matched[song_selected][2].split('-')[0].strip() + ' | كلمات:\n\n' + soup_ar.find('pre', class_=re.compile("^lyrics-body")).text
+            except AttributeError:
+                lyrics = self.songs_matched[song_selected][2].split('-')[0].strip() + ' | كلمات:\n\n' + soup_ar.find('h4', class_=re.compile("^error-page")).text
         
-        self.lyrics = lyrics
+            self.lyrics = lyrics
         self.photo = photo_url

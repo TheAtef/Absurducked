@@ -1,4 +1,4 @@
-import requests
+import cloudscraper
 import json
 from constants import BASE_GENIUS, HEADERS
 from telebot import types
@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup as bs
 class GeniusScraper:
     def __init__(self, query, num_pages, branch):
         self.query = query
+        self.scraper = cloudscraper.create_scraper()
         self.num_pages = num_pages
         self.branch = branch
         self.current_index = 0
@@ -19,7 +20,7 @@ class GeniusScraper:
     def get_songs(self):
         songs_matched = {}
         counter = 1
-        with requests.Session() as s:
+        with self.scraper as s:
             for page in range(1, self.num_pages + 1): # 10 songs per page
                 url = f'{BASE_GENIUS}/{self.branch}?page={page}&q={self.query.strip()}'
                 r = s.get(url, headers=HEADERS)
@@ -69,6 +70,7 @@ class GeniusScraper:
 class GeniusSong:
     def __init__(self, song_info): # [full_title, link, photo, album_photo, id]
         self.title, self.link, self.photo, self.album_photo, self.id = song_info
+        self.scraper = cloudscraper.create_scraper()
         self.lyrics = None
         self.about = None
         self.album_name = None
@@ -76,7 +78,7 @@ class GeniusSong:
         self.get_song()
         
     def get_song(self):
-        r = requests.get(self.link, headers=HEADERS)
+        r = self.scraper.get(self.link, headers=HEADERS)
         if r.status_code == 200:
             # get lyrics
             soup = bs(r.content, features='lxml')

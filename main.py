@@ -28,8 +28,8 @@ import sys
 
 import json
 
-from server import server
-server()
+# from server import server
+# server()
 
 bot = AsyncTeleBot(API_KEY)
 
@@ -569,22 +569,27 @@ async def callback_data(call):
             msg[call.message.chat.id].serched['subs'].selected_season = int(call.data.removeprefix('season_subs'))
             #await bot.edit_message_text(msg[call.message.chat.id].serched['subs'].seasons_names[msg[call.message.chat.id].serched['subs'].selected_season], call.message.chat.id, call.message.message_id, reply_markup=await msg[call.message.chat.id].serched['subs'].get_season_markup())
             msg[call.message.chat.id].user_free = False
-            for episode in msg[call.message.chat.id].serched['subs'].seasons[msg[call.message.chat.id].serched['subs'].selected_season]:
-                await bot.send_chat_action(call.message.chat.id, 'upload_document')
-                name, caption, url = episode
-                if url == None:
-                    await asyncio.sleep(0.5)
-                    await bot.send_message(call.message.chat.id, name + caption, reply_to_message_id=call.message.reply_to_message.message_id)
-                else:
-                    # r = msg[call.message.chat.id].serched['subs'].sess.get(url, stream=True)
-                    r = requests.get(url, stream=True)
-                    if 'Making sure you\'re not a bot!' in r.text or 'CAPTCHA robot test' in r.text:
-                        await bot.send_message(call.message.chat.id, name + 'Sorry couldn\'t download the file, please report this to bot creator!', reply_to_message_id=call.message.reply_to_message.message_id)
+            try: 
+                for episode in msg[call.message.chat.id].serched['subs'].seasons[msg[call.message.chat.id].serched['subs'].selected_season]:
+                    await bot.send_chat_action(call.message.chat.id, 'upload_document')
+                    name, caption, url = episode
+                    if url == None:
+                        await asyncio.sleep(0.5)
+                        await bot.send_message(call.message.chat.id, name + caption, reply_to_message_id=call.message.reply_to_message.message_id)
                     else:
-                        await bot.send_document(call.message.chat.id, r.raw, call.message.reply_to_message.message_id, caption=caption, visible_file_name=name+'.zip')
-            await bot.send_message(call.message.chat.id, 'Done!')
-            msg[call.message.chat.id].user_free = True
-            return
+                        try: 
+                            await bot.send_document(call.message.chat.id, url, call.message.reply_to_message.message_id, caption=caption, visible_file_name=name+'.zip')
+                        except:
+                            r = msg[call.message.chat.id].serched['subs'].sess.get(url, stream=True)
+                            if 'Making sure you\'re not a bot!' in r.text or 'CAPTCHA robot test' in r.text:
+                                await bot.send_message(call.message.chat.id, name + 'Sorry couldn\'t download the file, please report this to bot creator!', reply_to_message_id=call.message.reply_to_message.message_id)
+                            else:
+
+                                await bot.send_document(call.message.chat.id, r.raw, call.message.reply_to_message.message_id, caption=caption, visible_file_name=name+'.zip')
+                await bot.send_message(call.message.chat.id, 'Done!')
+            finally:
+                msg[call.message.chat.id].user_free = True
+                return
             
         # if call.data.startswith('ep_subs'):
         #     msg[call.message.chat.id].serched['subs'].selected_episode = int(call.data.removeprefix('ep_subs'))

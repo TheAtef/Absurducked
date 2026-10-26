@@ -17,7 +17,6 @@ class OTDScraper:
     async def get_data_otd(self):
         events = []
         r = self.scraper.get(BASE_OTD)
-
         if(r.status_code == 200):
             soup = bs(r.content, features='lxml')
             # featured_event

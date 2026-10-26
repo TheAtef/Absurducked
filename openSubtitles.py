@@ -1,16 +1,16 @@
-import requests
+import cloudscraper
 from bs4 import BeautifulSoup as bs
 import re
 import json
 from telebot import types
-from constants import BASE_OSUBS, BASE_OSUBS_FILES, BASE_OSUBS_TV, HEADERS
+from constants import BASE_OSUBS, BASE_OSUBS_FILES, BASE_OSUBS_TV
 from anubis_solver import solve_anubis_challenge
 from requests.utils import add_dict_to_cookiejar
 
 class OSubs:
     def __init__(self, query, lang='eng'):
         self.query = query
-        self.sess = None
+        self.scraper = cloudscraper.create_scraper()
         self.matched = {}
         self.markup = None
         self.selected_index = 0 # first markup
@@ -27,13 +27,12 @@ class OSubs:
         
     async def get_matched(self):
         self.matched = {}
-        self.sess = requests.Session()     
-        self.sess.headers.update(HEADERS)
-        resp = self.sess.get('https://www.opensubtitles.org', timeout=10, allow_redirects=True)
-        cookies = solve_anubis_challenge(self.sess, resp.url)
-        add_dict_to_cookiejar(self.sess.cookies, cookies)
+        self.scraper = cloudscraper.create_scraper()
+        resp = self.scraper.get('https://www.opensubtitles.org', timeout=10, allow_redirects=True)
+        cookies = solve_anubis_challenge(self.scraper, resp.url)
+        add_dict_to_cookiejar(self.scraper.cookies, cookies)
         
-        r = self.sess.get(BASE_OSUBS + self.query)
+        r = self.scraper.get(BASE_OSUBS + self.query)
         if r.status_code != 200:
             return None
         parsed_json = json.loads(r.text)
@@ -53,8 +52,7 @@ class OSubs:
 
     async def get_files(self):
         self.files = {}
-        r = self.sess.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1] + '/sort-7/asc-0')
-        # print(r.url)
+        r = self.scraper.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1] + '/sort-7/asc-0')
         soup = bs(r.content, 'lxml')
         table = soup.find('table', id='search_results')
         rows = table.find_all('tr', id=re.compile('^name'))
@@ -78,10 +76,9 @@ class OSubs:
         
     async def get_seasons(self):
         self.files = {}
-        r = self.sess.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1])
+        r = self.scraper.get(BASE_OSUBS_FILES + self.lang + '/idmovie-' + self.matched[self.selected_index][1])
         soup = bs(r.content, 'lxml')
         table = soup.find('table', id='search_results')
-        
         seasons = table.find_all('tr', class_=None)
         
         seasons_markup = types.InlineKeyboardMarkup()
@@ -99,9 +96,9 @@ class OSubs:
             if lista[j].get('itemprop') == 'episode':
                 cells = lista[j].find_all('td')
                 if cells[4].text == 'Upload':
-                    sesn.append((cells[0].text.replace('\n','').replace('\t','') , '\n\nSorry, no subs found.', None))
+                    sesn.append((cells[0].text.replace('\n',' ').replace('\t','') , '\n\nSorry, no subs found.', None))
                 else:
-                    sesn.append((cells[0].text.replace('\n','').replace('\t','') , f'{cells[0].text.replace('\n','').replace('\t','')}\n\nIMDB rating: {cells[3].text}/10', BASE_OSUBS_TV + self.lang + '/imdbid-' + cells[2].a.get('href').split('-')[-1]))
+                    sesn.append((cells[0].text.replace('\n',' ').replace('\t','') , f'{cells[0].text.replace('\n',' ').replace('\t','')}\n\nIMDB rating: {cells[3].text}/10', BASE_OSUBS_TV + self.lang + '/imdbid-' + cells[2].a.get('href').split('-')[-1]))
             else:
                 self.seasons.append(sesn)
                 sesn = []

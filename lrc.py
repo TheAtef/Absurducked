@@ -27,7 +27,7 @@ class LrcScraper:
         https.mount("https://", adapter)
         
         try:
-            r = https.get(BASE_LRC + self.query, headers=HEADERS, timeout=60)
+            r = https.get(BASE_LRC + 'search?q=' + self.query, headers=HEADERS, timeout=60)
             if r.status_code == 200:
                 parsed_json = json.loads(r.text)
                 for song in parsed_json:

@@ -1,4 +1,5 @@
 import requests
+import cloudscraper
 import json
 from telebot import types
 from constants import BASE_YTS_LIST, BASE_YTS_DETAILS, HEADERS
@@ -7,6 +8,7 @@ from constants import BASE_YTS_LIST, BASE_YTS_DETAILS, HEADERS
 class YTS:
     def __init__(self, query):
         self.query = query.strip()
+        self.scraper = cloudscraper.create_scraper()
         self.matched = None
         self.swipe_markup = None
         self.current_index = 0
@@ -14,7 +16,7 @@ class YTS:
         self.files = None
         
     async def get_matched(self):
-        r = requests.get(BASE_YTS_LIST + self.query)
+        r = self.scraper.get(BASE_YTS_LIST + self.query)
         matched = {}
         parsed_json = json.loads(r.text)
         self.max_index = parsed_json['data']['movie_count']
